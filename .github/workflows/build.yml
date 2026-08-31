@@ -1,27 +1,57 @@
-name: Build QModem for x86_64
+name: Build QModem with Docker SDK
 
 on:
   workflow_dispatch:
 
 jobs:
   build:
-    name: Build QModem
     runs-on: ubuntu-latest
-
     steps:
-      - name: Checkout repository
+      - name: Checkout code
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
 
-      - name: Build with OpenWrt SDK
-        uses: openwrt/gh-action-sdk@main
-        env:
-          ARCH: x86_64-23.05.4
-          PACKAGES: qmodem luci-app-qmodem-next luci-app-qmodem-sms luci-app-qmodem-mwan
-          # ✅ 关键修复：EXTRA_FEEDS 使用单行，用 | 分隔多个源
-          EXTRA_FEEDS: src-git luci https://github.com/openwrt/luci.git;openwrt-23.05 | src-git packages https://github.com/openwrt/packages.git;openwrt-23.05
-          V: s
+      - name: Build QModem in Docker
+        run: |
+          # 1. 拉取 OpenWrt SDK 镜像（选择稳定的 23.05.4 版本）
+          docker pull ghcr.io/openwrt/sdk:x86_64-23.05.4
+
+          # 2. 在容器内执行构建
+          docker run --rm \
+            -v $PWD:/builder \
+            -w /builder \
+            ghcr.io/openwrt/sdk:x86_64-23.05.4 \
+            bash -c "
+              # 修复 feeds 源为 GitHub 镜像，提高稳定性
+              sed -i 's|https://git.openwrt.org/feed/packages.git|https://github.com/openwrt/packages.git|g' feeds.conf.default
+              sed -i 's|https://git.openwrt.org/project/luci.git|https://github.com/openwrt/luci.git|g' feeds.conf.default
+
+              # 添加额外的 feeds
+              echo 'src-git luci https://github.com/openwrt/luci.git;openwrt-23.05' >> feeds.conf.default
+              echo 'src-git packages https://github.com/openwrt/packages.git;openwrt-23.05' >> feeds.conf.default
+
+              # 【调试】查看最终 feeds.conf.default 内容，确认配置正确
+              cat feeds.conf.default
+
+              # 更新 feeds（开启详细输出 -v）
+              ./scripts/feeds update -a -v
+
+              # 安装 feeds
+              ./scripts/feeds install -a
+
+              # 设置要编译的包
+              echo 'CONFIG_PACKAGE_qmodem=y' >> .config
+              echo 'CONFIG_PACKAGE_luci-app-qmodem-next=y' >> .config
+              echo 'CONFIG_PACKAGE_luci-app-qmodem-sms=y' >> .config
+              echo 'CONFIG_PACKAGE_luci-app-qmodem-mwan=y' >> .config
+
+              # 更新配置
+              make defconfig
+
+              # 开始编译（使用单线程，方便查看错误）
+              make -j1 V=s
+            "
 
       - name: Upload artifacts
         uses: actions/upload-artifact@v4

@@ -16,25 +16,23 @@ jobs:
       - name: Build with OpenWrt SDK
         uses: openwrt/gh-action-sdk@main
         env:
-          # 指定 SDK 架构和版本
           ARCH: x86_64-23.05.4
-          # 要编译的包列表
           PACKAGES: qmodem luci-app-qmodem-next luci-app-qmodem-sms luci-app-qmodem-mwan
-          # 在构建前执行的脚本（修复 feeds 源并手动 update）
           pre-build: |
             set -e
-            # 将默认的 git.openwrt.org 源替换为 GitHub 镜像
+            # 替换默认源为 GitHub 镜像，提高稳定性
             sed -i 's|https://git.openwrt.org/feed/packages.git|https://github.com/openwrt/packages.git|g' feeds.conf.default
             sed -i 's|https://git.openwrt.org/project/luci.git|https://github.com/openwrt/luci.git|g' feeds.conf.default
-            # 添加额外的 feeds（指定稳定分支）
+            # 添加额外 feed
             echo 'src-git luci https://github.com/openwrt/luci.git;openwrt-23.05' >> feeds.conf.default
             echo 'src-git packages https://github.com/openwrt/packages.git;openwrt-23.05' >> feeds.conf.default
-            # 打印配置以供检查
+            # 打印配置（检查）
             echo "=== feeds.conf.default ==="
             cat feeds.conf.default
-            # 手动执行 feeds update，开启详细输出
+            # 更新 feeds
             ./scripts/feeds update -a -v
-          # 为后续编译开启详细日志
+            # ✅ 关键：安装所有 feed 中的包
+            ./scripts/feeds install -a
           V: s
 
       - name: Upload artifacts

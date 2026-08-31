@@ -15,24 +15,27 @@ jobs:
 
       - name: Build with OpenWrt SDK
         uses: openwrt/gh-action-sdk@main
-        with:
-          arch: x86_64-23.05.4
-          packages: qmodem luci-app-qmodem-next luci-app-qmodem-sms luci-app-qmodem-mwan
+        env:
+          # 指定 SDK 架构和版本
+          ARCH: x86_64-23.05.4
+          # 要编译的包列表
+          PACKAGES: qmodem luci-app-qmodem-next luci-app-qmodem-sms luci-app-qmodem-mwan
+          # 在构建前执行的脚本（修复 feeds 源并手动 update）
           pre-build: |
             set -e
-            # 将默认的 git.openwrt.org 源全部替换为 GitHub 镜像
+            # 将默认的 git.openwrt.org 源替换为 GitHub 镜像
             sed -i 's|https://git.openwrt.org/feed/packages.git|https://github.com/openwrt/packages.git|g' feeds.conf.default
             sed -i 's|https://git.openwrt.org/project/luci.git|https://github.com/openwrt/luci.git|g' feeds.conf.default
-            # 添加额外的 feeds（明确指定分支）
+            # 添加额外的 feeds（指定稳定分支）
             echo 'src-git luci https://github.com/openwrt/luci.git;openwrt-23.05' >> feeds.conf.default
             echo 'src-git packages https://github.com/openwrt/packages.git;openwrt-23.05' >> feeds.conf.default
-            # 打印最终配置，方便检查
+            # 打印配置以供检查
             echo "=== feeds.conf.default ==="
             cat feeds.conf.default
-            # 手动执行 feeds update，开启详细输出（-v），失败则终止脚本
+            # 手动执行 feeds update，开启详细输出
             ./scripts/feeds update -a -v
-        env:
-          V: s   # 为后续 make 开启详细日志
+          # 为后续编译开启详细日志
+          V: s
 
       - name: Upload artifacts
         uses: actions/upload-artifact@v4

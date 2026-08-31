@@ -16,20 +16,14 @@ jobs:
       - name: Build with OpenWrt SDK
         uses: openwrt/gh-action-sdk@main
         env:
-          # 使用稳定的 23.05.4 版本（避免 24.10 可能的不稳定）
           ARCH: x86_64-23.05.4
-          # 要编译的包列表
           PACKAGES: qmodem luci-app-qmodem-next luci-app-qmodem-sms luci-app-qmodem-mwan
-          # 额外添加的 feeds（单行，用 | 分隔多个源）
           EXTRA_FEEDS: src-git luci https://github.com/openwrt/luci.git;openwrt-23.05 | src-git packages https://github.com/openwrt/packages.git;openwrt-23.05
-          # 开启详细日志，便于排错
           V: s
 
       - name: Upload artifacts
         uses: actions/upload-artifact@v4
         with:
           name: qmodem-x86_64-packages
-          path: bin/packages/x86_64/packages/*.ipk
-          if-no-files-found: error
           path: bin/packages/x86_64/packages/*.ipk
           if-no-files-found: error

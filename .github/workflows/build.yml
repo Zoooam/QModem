@@ -16,7 +16,7 @@ jobs:
         arch: [ x86_64 ]
         # 如果需要其他架构，可以在这里添加，例如: [ x86_64, mips_24kc ]
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/upload-artifact@v4
         with:
           fetch-depth: 0
       - name: Build

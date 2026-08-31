@@ -1,29 +1,30 @@
-name: Test Build
+name: Build QModem for x86_64
 
 on:
-  pull_request:
-    branches: [ "main" ]
-  workflow_dispatch:
+  workflow_dispatch:  # 手动触发
 
 jobs:
   build:
-    name: x86_64 build
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - name: Checkout
+        uses: actions/checkout@v4
         with:
           fetch-depth: 0
 
       - name: Build
         uses: openwrt/gh-action-sdk@main
         env:
-          ARCH: x86_64
-          PACKAGES: qmodem luci-app-qmodem-next luci-app-qmodem-sms luci-app-qmodem-mwan luci-app-qmodem-ttl luci-app-qmodem-monitor
-          EXTRA_FEEDS: src-git luci https://github.com/openwrt/luci.git;main | src-git packages https://github.com/openwrt/packages.git;openwrt-24.10
-          V: s 
-      - name: Store packages
+          ARCH: x86_64-23.05.4
+          PACKAGES: qmodem luci-app-qmodem-next luci-app-qmodem-sms luci-app-qmodem-mwan
+          EXTRA_FEEDS: |
+            src-git luci https://github.com/openwrt/luci.git;openwrt-23.05
+            src-git packages https://github.com/openwrt/packages.git;openwrt-23.05
+          V: s
+
+      - name: Upload packages
         uses: actions/upload-artifact@v4
         with:
-          name: x86_64-packages
+          name: qmodem-x86_64
           path: bin/packages/x86_64/packages/*.ipk
           if-no-files-found: error
